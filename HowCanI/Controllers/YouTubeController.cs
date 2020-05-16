@@ -39,22 +39,14 @@ namespace HowCanI.Controllers
             _configuration = configuration;
         }
 
-        [HttpGet("upload")]
-        public async Task<IActionResult> UploadVideoAsync()
+        [HttpGet("upload/{videoId}")]
+        public async Task<IActionResult> UploadVideoAsync(string videoId)
         {
 
-            var filePath = @"C:\Users\CodeTheCat\Pictures\Camera Roll\test.mp4";
+            var filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), videoId + ".mp4");
 
-            // 1) Extract the audio path via ffmpeg
-            //IMediaInfo mediaInfo = await FFmpeg.GetMediaInfo(filePath);
-            //Debug.WriteLine($"Video info (FFMPEG): duration {mediaInfo.Duration}, size:{(int)(mediaInfo.Size / 1024)}kByte, codec: {mediaInfo.VideoStreams.First().Codec}");
-            //var audioPath = Path.Combine(Path.GetDirectoryName(filePath), Path.GetFileNameWithoutExtension(filePath) + ".mp3");
-            //var audioConversion = await FFmpeg.Conversions.FromSnippet.ExtractAudio(filePath, audioPath);
-            //await audioConversion.Start();
-            //Debug.WriteLine($"MP3 audio stream extracted in {audioPath}");
-
-            // 2) Index video and extract info
-            _azureVideoIndexer.AnalyzeVideo(filePath, Path.GetFileNameWithoutExtension(filePath), "Esempio di utilizzo dei servizi di indicizzazine di Azure", "it-IT");
+            string captions = await _azureVideoIndexer.GetVideoCaptions(videoId, "it-IT");
+            var tags = await _azureVideoIndexer.GetVideoTags(videoId, "it-IT");
 
             // 3) get captions from an external services
             await _youtubeService.UploadVideo(Path.GetFileNameWithoutExtension(filePath), filePath);
@@ -62,27 +54,28 @@ namespace HowCanI.Controllers
             return new JsonResult(new { result = true });
         }
 
-        [HttpGet("analyze")]
-        public async Task<IActionResult> AnalyzeVideoAsync()
+        [HttpPost("index")]
+        public async Task<IActionResult> IndexVideoAsync(List<IFormFile> files)
         {
+            if (files.Count == 0)
+            {
+                return BadRequest("No file uploaded");
+            }
 
-            var filePath = @"C:\Users\CodeTheCat\Pictures\Camera Roll\test.mp4";
+            long size = files.Sum(f => f.Length);
 
-            // 1) Extract the audio path via ffmpeg
-            //IMediaInfo mediaInfo = await FFmpeg.GetMediaInfo(filePath);
-            //Debug.WriteLine($"Video info (FFMPEG): duration {mediaInfo.Duration}, size:{(int)(mediaInfo.Size / 1024)}kByte, codec: {mediaInfo.VideoStreams.First().Codec}");
-            //var audioPath = Path.Combine(Path.GetDirectoryName(filePath), Path.GetFileNameWithoutExtension(filePath) + ".mp3");
-            //var audioConversion = await FFmpeg.Conversions.FromSnippet.ExtractAudio(filePath, audioPath);
-            //await audioConversion.Start();
-            //Debug.WriteLine($"MP3 audio stream extracted in {audioPath}");
+            var filePath = Path.GetTempFileName();
 
-            // 2) Index video and extract info
-            _azureVideoIndexer.AnalyzeVideo(filePath, Path.GetFileNameWithoutExtension(filePath), "Esempio di utilizzo dei servizi di indicizzazine di Azure", "it-IT");
+            using (var stream = System.IO.File.Create(filePath))
+            {
+                await files.First().CopyToAsync(stream);
+            }
 
-            // 3) get captions from an external services
-            await _youtubeService.UploadVideo(Path.GetFileNameWithoutExtension(filePath), filePath);
+            var videoId = await _azureVideoIndexer.AnalyzeVideo(filePath, Path.GetFileNameWithoutExtension(filePath), "Esempio di utilizzo dei servizi di indicizzazine di Azure", "it-IT");
 
-            return new JsonResult(new { result = true });
+            System.IO.File.Copy(filePath, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), videoId + ".mp4"));
+
+            return new JsonResult(new { uploaded = videoId != null, filePath, videoId });
         }
 
         [HttpGet("caption/{videoId}")]

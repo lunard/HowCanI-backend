@@ -47,7 +47,7 @@ namespace HowCanI.Application.Services.Impl
             accountAccessToken = accountAccessTokenRequestResult.Content.ReadAsStringAsync().Result.Replace("\"", "");
         }
 
-        public void AnalyzeVideo(string videoPath, string name, string description, string language)
+        public async Task<string> AnalyzeVideo(string videoPath, string name, string description, string language)
         {
             var content = new MultipartFormDataContent();
             Debug.WriteLine("Uploading...");
@@ -63,7 +63,7 @@ namespace HowCanI.Application.Services.Impl
             var client = new HttpClient(handler);
 
             var uploadRequestResult = client.PostAsync($"{apiUrl}/{location}/Accounts/{accountId}/Videos?accessToken={accountAccessToken}&fileName={name}&name={name}&description={description}&privacy=private&language={language}", content).Result;
-            var uploadContentResult = uploadRequestResult.Content.ReadAsStringAsync().Result;
+            var uploadContentResult = await uploadRequestResult.Content.ReadAsStringAsync();
 
             // get the video id from the upload result
             var uploadResult = (JObject)JsonConvert.DeserializeObject<dynamic>(uploadContentResult);
@@ -71,43 +71,42 @@ namespace HowCanI.Application.Services.Impl
             if (uploadResult["ErrorType"] != null)
             {
                 Debug.WriteLine($"Azure Indexer error: {uploadResult["ErrorType"]}");
-                return;
+                return null;
             }
 
-            var videoId = uploadResult["id"];
+            var videoId = uploadResult["id"].Value<string>();
             Debug.WriteLine("Uploaded");
             Debug.WriteLine("Video ID: " + videoId);
 
-            // Obtain video access token
-            client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", apiKey);
-            var videoTokenRequestResult = client.GetAsync($"{apiUrl}/auth/{location}/Accounts/{accountId}/Videos/{videoId}/AccessToken?allowEdit=true").Result;
-            var videoAccessToken = videoTokenRequestResult.Content.ReadAsStringAsync().Result.Replace("\"", "");
+            //// Obtain video access token
+            //client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", apiKey);
+            //var videoTokenRequestResult = await client.GetAsync($"{apiUrl}/auth/{location}/Accounts/{accountId}/Videos/{videoId}/AccessToken?allowEdit=true");
+            //var videoAccessToken = videoTokenRequestResult.Content.ReadAsStringAsync().Result.Replace("\"", "");
 
-            client.DefaultRequestHeaders.Remove("Ocp-Apim-Subscription-Key");
+            //while (true)
+            //{
+            //    Thread.Sleep(10000);
 
+            //    var videoGetIndexRequestResult = await client.GetAsync($"{apiUrl}/{location}/Accounts/{accountId}/Videos/{videoId}/Index?accessToken={videoAccessToken}&language={language}");
+            //    var videoGetIndexResult = videoGetIndexRequestResult.Content.ReadAsStringAsync().Result;
 
-            while (true)
-            {
-                Thread.Sleep(10000);
+            //    var processingState = JsonConvert.DeserializeObject<dynamic>(videoGetIndexResult)["state"];
 
-                var videoGetIndexRequestResult = client.GetAsync($"{apiUrl}/{location}/Accounts/{accountId}/Videos/{videoId}/Index?accessToken={videoAccessToken}&language={language}").Result;
-                var videoGetIndexResult = videoGetIndexRequestResult.Content.ReadAsStringAsync().Result;
+            //    Debug.WriteLine("");
+            //    Debug.WriteLine("State:");
+            //    Debug.WriteLine((string)processingState);
 
-                var processingState = JsonConvert.DeserializeObject<dynamic>(videoGetIndexResult)["state"];
+            //    // job is finished
+            //    if (processingState != "Uploaded" && processingState != "Processing")
+            //    {
+            //        Debug.WriteLine("");
+            //        Debug.WriteLine("Full JSON:");
+            //        Debug.WriteLine(videoGetIndexResult);
+            //        break;
+            //    }
+            //}
 
-                Debug.WriteLine("");
-                Debug.WriteLine("State:");
-                Debug.WriteLine((string)processingState);
-
-                // job is finished
-                if (processingState != "Uploaded" && processingState != "Processing")
-                {
-                    Debug.WriteLine("");
-                    Debug.WriteLine("Full JSON:");
-                    Debug.WriteLine(videoGetIndexResult);
-                    break;
-                }
-            }
+            return videoId;
         }
 
         public async Task<string> GetVideoCaptions(string videoId, string language)

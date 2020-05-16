@@ -8,7 +8,7 @@ namespace HowCanI.Application.Services.Interfaces
 {
     public interface IVideoIndexer
     {
-        void AnalyzeVideo(string videoPath, string name, string description, string language);
+        Task<string> AnalyzeVideo(string videoPath, string name, string description, string language);
         Task<string> GetVideoCaptions(string videoId, string language);
 
         Task<List<string>> GetVideoTags(string videoId, string language);
