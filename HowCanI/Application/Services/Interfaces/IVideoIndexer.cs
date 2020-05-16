@@ -10,7 +10,6 @@ namespace HowCanI.Application.Services.Interfaces
     {
         Task<string> AnalyzeVideo(string videoPath, string name, string description, string language);
         Task<string> GetVideoCaptions(string videoId, string language);
-
-        Task<List<string>> GetVideoTags(string videoId, string language);
+        Task<List<Label>> GetVideoTags(string videoId, string language);
     }
 }

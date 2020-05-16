@@ -12,6 +12,7 @@ using System.Net.Http;
 using System.Reflection.Emit;
 using System.Threading;
 using System.Threading.Tasks;
+using Label = HowCanI.Application.Models.VideoIndexer.Label;
 
 namespace HowCanI.Application.Services.Impl
 {
@@ -125,7 +126,7 @@ namespace HowCanI.Application.Services.Impl
             return videoGetSubtitleResult.Content.ReadAsStringAsync().Result;
         }
 
-        public async Task<List<string>> GetVideoTags(string videoId, string language)
+        public async Task<List<Label>> GetVideoTags(string videoId, string language)
         {
             // create the http client
             var handler = new HttpClientHandler();
@@ -140,16 +141,7 @@ namespace HowCanI.Application.Services.Impl
             var videoGetIndexRequestResult = await client.GetAsync($"{apiUrl}/{location}/Accounts/{accountId}/Videos/{videoId}/Index?accessToken={videoAccessToken}&language={language}");
             JObject videoGetIndexResult = (JObject)JsonConvert.DeserializeObject( await videoGetIndexRequestResult.Content.ReadAsStringAsync());
 
-            var labels = JsonConvert.DeserializeObject<List<Label>>( videoGetIndexResult["summarizedInsights"]["labels"].ToString());
-
-            return labels.Select(l=>l.Name).ToList();
+            return JsonConvert.DeserializeObject<List<Label>>( videoGetIndexResult["summarizedInsights"]["labels"].ToString());
         }
-    }
-
-    class Label
-    {
-        public int Id { get; set; }
-
-        public string Name { get; set; }
     }
 }

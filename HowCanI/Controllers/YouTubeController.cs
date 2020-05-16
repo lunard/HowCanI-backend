@@ -42,11 +42,10 @@ namespace HowCanI.Controllers
         [HttpGet("upload/{videoId}")]
         public async Task<IActionResult> UploadVideoAsync(string videoId)
         {
-
             var filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), videoId + ".mp4");
 
             string captions = await _azureVideoIndexer.GetVideoCaptions(videoId, "it-IT");
-            var tags = await _azureVideoIndexer.GetVideoTags(videoId, "it-IT");
+            var labels = await _azureVideoIndexer.GetVideoTags(videoId, "it-IT");
 
             // 3) get captions from an external services
             await _youtubeService.UploadVideo(Path.GetFileNameWithoutExtension(filePath), filePath);
@@ -91,9 +90,9 @@ namespace HowCanI.Controllers
         [HttpGet("tags/{videoId}")]
         public async Task<IActionResult> GetVideoTagsAsync(string videoId)
         {
-            var tags = await _azureVideoIndexer.GetVideoTags(videoId, "it-IT");
+            var labels = await _azureVideoIndexer.GetVideoTags(videoId, "it-IT");
 
-            return new JsonResult(tags);
+            return new JsonResult(labels);
         }
     }
 }
