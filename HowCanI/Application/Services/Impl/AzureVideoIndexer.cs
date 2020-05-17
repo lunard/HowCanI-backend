@@ -122,8 +122,12 @@ namespace HowCanI.Application.Services.Impl
             var videoTokenRequestResult = client.GetAsync($"{apiUrl}/auth/{location}/Accounts/{accountId}/Videos/{videoId}/AccessToken?allowEdit=true").Result;
             var videoAccessToken = videoTokenRequestResult.Content.ReadAsStringAsync().Result.Replace("\"", "");
 
-            var videoGetSubtitleResult =  await client.GetAsync($"{apiUrl}/{location}/Accounts/{accountId}/Videos/{videoId}/Captions?accessToken={videoAccessToken}&format=Srt&language={language}");
-            return videoGetSubtitleResult.Content.ReadAsStringAsync().Result;
+            var videoGetSubtitleResult = await client.GetAsync($"{apiUrl}/{location}/Accounts/{accountId}/Videos/{videoId}/Captions?accessToken={videoAccessToken}&format=Srt&language={language}");
+            var captions = await videoGetSubtitleResult.Content.ReadAsStringAsync();
+
+            Debug.WriteLine($"Captions: {captions}");
+
+            return captions;
         }
 
         public async Task<List<Label>> GetVideoTags(string videoId, string language)
@@ -139,9 +143,13 @@ namespace HowCanI.Application.Services.Impl
             var videoAccessToken = videoTokenRequestResult.Content.ReadAsStringAsync().Result.Replace("\"", "");
 
             var videoGetIndexRequestResult = await client.GetAsync($"{apiUrl}/{location}/Accounts/{accountId}/Videos/{videoId}/Index?accessToken={videoAccessToken}&language={language}");
-            JObject videoGetIndexResult = (JObject)JsonConvert.DeserializeObject( await videoGetIndexRequestResult.Content.ReadAsStringAsync());
+            JObject videoGetIndexResult = (JObject)JsonConvert.DeserializeObject(await videoGetIndexRequestResult.Content.ReadAsStringAsync());
 
-            return JsonConvert.DeserializeObject<List<Label>>( videoGetIndexResult["summarizedInsights"]["labels"].ToString());
+            var labels = JsonConvert.DeserializeObject<List<Label>>(videoGetIndexResult["summarizedInsights"]["labels"].ToString());
+
+            Debug.WriteLine($"Labels: {String.Join(",", labels.Select(l => l.Name).ToList())}");
+
+            return labels;
         }
     }
 }

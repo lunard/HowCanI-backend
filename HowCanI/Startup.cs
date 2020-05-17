@@ -29,6 +29,7 @@ namespace HowCanI
         {
             services.AddTransient<IVideoStore, YouTubeVideoStore>();
             services.AddTransient<IVideoIndexer, AzureVideoIndexer>();
+            services.AddTransient<ILanguageUnderstanding, LUISService>();
 
             services.AddControllers();
         }
