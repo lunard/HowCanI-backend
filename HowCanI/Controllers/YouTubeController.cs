@@ -48,7 +48,7 @@ namespace HowCanI.Controllers
             var labels = await _azureVideoIndexer.GetVideoTags(videoId, "it-IT");
 
             // 3) get captions from an external services
-            await _youtubeService.UploadVideo(Path.GetFileNameWithoutExtension(filePath), filePath);
+            await _youtubeService.UploadVideo(Path.GetFileNameWithoutExtension(filePath), filePath, captions, labels);
 
             return new JsonResult(new { result = true });
         }
