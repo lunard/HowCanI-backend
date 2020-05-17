@@ -3,9 +3,11 @@ using HowCanI.Application.Services.Interfaces;
 using Microsoft.Azure.CognitiveServices.Language.LUIS.Runtime;
 using Microsoft.Azure.CognitiveServices.Language.LUIS.Runtime.Models;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace HowCanI.Application.Services.Impl
@@ -34,42 +36,47 @@ namespace HowCanI.Application.Services.Impl
             predictionEndpoint = _configuration.GetValue<string>("LUIS_prediction_endpoint");
             appId = _configuration.GetValue<string>("LUIS_app_id");
 
-            var credentials = new ApiKeyServiceClientCredentials(predictionKey);
-            _LUISClient = new LUISRuntimeClient(credentials, new System.Net.Http.DelegatingHandler[] { })
-            {
-                Endpoint = predictionEndpoint
-            };
+            //var credentials = new ApiKeyServiceClientCredentials(predictionKey);
+            //_LUISClient = new LUISRuntimeClient(credentials, new System.Net.Http.DelegatingHandler[] { })
+            //{
+            //    Endpoint = predictionEndpoint
+            //};
         }
 
         public async Task<Models.LanguageUnderstanding.Intent> GetIntent(string sentence)
         {
-            Models.LanguageUnderstanding.Intent i = new Models.LanguageUnderstanding.Intent();
+            // Runtime client seems not to work!
 
-            var requestOptions = new PredictionRequestOptions
-            {
-                DatetimeReference = DateTime.Now,
-                PreferExternalEntities = true
-            };
+            //Microsoft.Azure.CognitiveServices.Language.LUIS.Runtime.Models
+            //var requestOptions = new PredictionRequestOptions
+            //{
+            //    DatetimeReference = DateTime.Parse("2019-01-01"),
+            //    PreferExternalEntities = true
+            //};
 
-            var predictionRequest = new PredictionRequest
-            {
-                Query = sentence,
-                Options = requestOptions
-            };
+            //var predictionRequest = new PredictionRequest
+            //{
+            //    Query = sentence,
+            //    Options = requestOptions
+            //};
 
-            // get prediction
-            var response = await _LUISClient.Prediction.GetSlotPredictionAsync(
-                Guid.Parse(appId),
-                slotName: "production",
-                predictionRequest,
-                verbose: true,
-                showAllIntents: true,
-                log: true);
+            //// get prediction
+            //var response = await _LUISClient.Prediction.GetSlotPredictionAsync(
+            //    Guid.Parse(appId),
+            //    slotName: "production",
+            //    predictionRequest,
+            //    verbose: true,
+            //    showAllIntents: true,
+            //    log: true);
 
-            i.Name = response.Prediction.TopIntent;
-            i.Properties = response.Prediction.Entities.Select(e => e.Value.ToString()).ToList();
+            // create the http client
+            var handler = new HttpClientHandler();
+            handler.AllowAutoRedirect = false;
+            var client = new HttpClient(handler);
 
-            return i;
+            var response = await client.GetAsync($"{predictionEndpoint}/apps/{appId}?verbose=true&timezoneOffset=0&subscription-key={predictionKey}&q={sentence}");
+            var json = await response.Content.ReadAsStringAsync();
+            return JsonConvert.DeserializeObject<Models.LanguageUnderstanding.Intent>(json);
         }
     }
 }

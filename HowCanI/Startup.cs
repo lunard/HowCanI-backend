@@ -32,6 +32,18 @@ namespace HowCanI
             services.AddTransient<ILanguageUnderstanding, LUISService>();
 
             services.AddControllers();
+
+            services.AddCors(options =>
+            {
+                options.AddPolicy(name: "AlowCORS",
+                                  builder =>
+                                  {
+                                      builder.AllowAnyOrigin();
+                                      builder.AllowAnyHeader();
+                                      builder.AllowAnyHeader();
+                                      builder.AllowAnyMethod();
+                                  });
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -41,6 +53,8 @@ namespace HowCanI
             {
                 app.UseDeveloperExceptionPage();
             }
+
+            app.UseCors("AlowCORS");
 
             app.UseRouting();
 

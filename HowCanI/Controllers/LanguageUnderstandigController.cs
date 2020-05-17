@@ -38,9 +38,9 @@ namespace HowCanI.Controllers
         }
 
         [HttpPost("understand")]
-        public async Task<IActionResult> IndexVideoAsync([FromBody] string sentence)
+        public async Task<IActionResult> IndexVideoAsync([FromBody] UnderstandRequest request)
         {
-            Intent i = await _languageUnderstandingService.GetIntent(sentence);
+            Intent i = await _languageUnderstandingService.GetIntent(request.Text);
 
             return new JsonResult(i);
         }
